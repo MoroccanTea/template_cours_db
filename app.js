@@ -7,6 +7,8 @@ require('dotenv').config();
 require('./utils/mongo-db');
 const swaggerUi = require('swagger-ui-express');
 const swaggerSpec = require('./utils/swagger');
+const cors = require('cors');
+
 
 var indexRouter = require('./routes/index');
 var usersRouter = require('./routes/users');
@@ -22,8 +24,20 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());
 app.use(express.static(path.join(__dirname, 'public')));
+
 // SWAGGER
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
+
+// CORS 
+const corsOptions = {
+  origin: 'http://localhost:3000', // FRONT END URL
+  optionsSuccessStatus: 200,
+  methods: 'GET,PUT,POST,DELETE',
+  credentials: true,
+  allowedHeaders: 'Content-Type,Authorization'
+};
+
+app.use(cors(corsOptions));
 
 app.use('/', indexRouter);
 app.use('/users', usersRouter);
