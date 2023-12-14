@@ -1,19 +1,18 @@
-var createError = require('http-errors');
-var express = require('express');
-var path = require('path');
-var cookieParser = require('cookie-parser');
-var logger = require('morgan');
+const createError = require('http-errors');
+const express = require('express');
+const path = require('path');
+const cookieParser = require('cookie-parser');
+const logger = require('morgan');
 require('dotenv').config();
 require('./utils/mongo-db');
 const swaggerUi = require('swagger-ui-express');
-const swaggerSpec = require('./utils/swagger');
 const cors = require('cors');
+const swaggerSpec = require('./utils/swagger');
 
+const indexRouter = require('./routes/index');
+const usersRouter = require('./routes/users');
 
-var indexRouter = require('./routes/index');
-var usersRouter = require('./routes/users');
-
-var app = express();
+const app = express();
 
 // view engine setup
 app.set('views', path.join(__dirname, 'views'));
@@ -28,13 +27,13 @@ app.use(express.static(path.join(__dirname, 'public')));
 // SWAGGER
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
-// CORS 
+// CORS
 const corsOptions = {
   origin: 'http://localhost:3000', // FRONT END URL
   optionsSuccessStatus: 200,
   methods: 'GET,PUT,POST,DELETE',
   credentials: true,
-  allowedHeaders: 'Content-Type,Authorization'
+  allowedHeaders: 'Content-Type,Authorization',
 };
 
 app.use(cors(corsOptions));
@@ -43,12 +42,12 @@ app.use('/', indexRouter);
 app.use('/users', usersRouter);
 
 // catch 404 and forward to error handler
-app.use(function(req, res, next) {
+app.use((req, res, next) => {
   next(createError(404));
 });
 
 // error handler
-app.use(function(err, req, res, next) {
+app.use((err, req, res) => {
   // set locals, only providing error in development
   res.locals.message = err.message;
   res.locals.error = req.app.get('env') === 'development' ? err : {};

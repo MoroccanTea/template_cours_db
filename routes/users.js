@@ -1,10 +1,11 @@
-var express = require('express');
-var router = express.Router();
-var User = require('../models/user');
-var bcrypt = require('bcryptjs');
-var { generateToken, verifyToken  } = require('../utils/jwtUtils');
-var isAdmin = require('../middlewares/isAdmin');
-var authenticate = require('../middlewares/authenticate');
+const express = require('express');
+
+const router = express.Router();
+const bcrypt = require('bcryptjs');
+const User = require('../models/User');
+const { generateToken } = require('../utils/jwtUtils');
+const isAdmin = require('../middlewares/isAdmin');
+const authenticate = require('../middlewares/authenticate');
 
 /**
  * @swagger
@@ -40,7 +41,6 @@ var authenticate = require('../middlewares/authenticate');
  *       description: Unauthorized access.
  */
 
-
 /**
  * @swagger
  * /users/:
@@ -59,7 +59,8 @@ var authenticate = require('../middlewares/authenticate');
  * /users/{id}:
  *   get:
  *     summary: Retrieves a specific user by ID
- *     description: Requires JWT token for authentication. Accessible by the user themselves or an admin.
+ *     description: Requires JWT token for authentication.
+ *                  Accessible by the user themselves or an admin.
  *     security:
  *       - bearerAuth: []
  *     parameters:
@@ -132,7 +133,8 @@ var authenticate = require('../middlewares/authenticate');
  * /users/{id}:
  *   put:
  *     summary: Update a user
- *     description: Requires JWT token for authentication. Endpoint to update user data. Only accessible by the user themselves.
+ *     description: Requires JWT token for authentication.
+ *                  Endpoint to update user data. Only accessible by the user themselves.
  *     security:
  *       - bearerAuth: []
  *     parameters:
@@ -180,18 +182,15 @@ var authenticate = require('../middlewares/authenticate');
  *         description: User not found.
  */
 
-
-
-
-router.get('/', authenticate, isAdmin, async function (req, res, next) {
+router.get('/', authenticate, isAdmin, async (req, res, next) => {
   await User.find({}).then((users) => {
     res.status(200).json(users);
   }).catch(next);
 });
 
-router.get('/:id', authenticate, async function (req, res, next) {
+router.get('/:id', authenticate, async (req, res, next) => {
   const loggedInUser = req.user;
-  if (loggedInUser && loggedInUser.id == req.params.id) {
+  if (loggedInUser && loggedInUser.id === req.params.id) {
     await User.findById(req.params.id).then((user) => {
       res.status(200).json(user);
     }).catch(next);
@@ -200,23 +199,21 @@ router.get('/:id', authenticate, async function (req, res, next) {
   }
 });
 
-
-router.post('/register', async function (req, res, next) {
+router.post('/register', async (req, res) => {
   try {
     const hashedpassword = await bcrypt.hash(req.body.password, 10);
     const user = new User({
       name: req.body.name,
       email: req.body.email,
       password: hashedpassword,
-      role: "customer"
+      role: 'customer',
     });
     await user.save();
-    res.status(201).json({ message: 'User created successfully', user: { _id: user._id, name: user.name } });
+    res.status(201).json({ message: 'User created successfully', user: { _id: user.id, name: user.name } });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
 });
-
 
 router.post('/login', async (req, res) => {
   const user = await User.findOne({ email: req.body.email });
@@ -229,31 +226,26 @@ router.post('/login', async (req, res) => {
   }
 
   const token = generateToken(user);
-  res.status(200).json({ token });
+  return res.status(200).json({ token });
 });
 
-
-router.put('/:id', authenticate, async function (req, res, next) {
+router.put('/:id', authenticate, async (req, res, next) => {
   const loggedInUser = req.user;
-  let data = {
+  const data = {
     name: req.body.name,
-    email: req.body.email
+    email: req.body.email,
   };
-  if (loggedInUser && loggedInUser.id == req.params.id) {
+  if (loggedInUser && loggedInUser.id === req.params.id) {
     await User.findOneAndUpdate({ _id: req.params.id }, data).then((user) => {
       res.status(200).json(user);
     }).catch(next);
-  };
+  }
 });
 
-
-router.delete('/:id', authenticate, isAdmin, function (req, res, next) {
-  User.findOneAndDelete({ _id: req.params.id }).then((user) => {
-    res.status(200).json("User deleted successfully");
+router.delete('/:id', authenticate, isAdmin, (req, res, next) => {
+  User.findOneAndDelete({ _id: req.params.id }).then(() => {
+    res.status(200).json('User deleted successfully');
   }).catch(next);
 });
-
-
-
 
 module.exports = router;
