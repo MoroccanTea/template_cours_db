@@ -1,0 +1,39 @@
+version: '3.8'
+
+services:
+
+  node-app:
+    container_name: node-app
+    env_file:
+      - ../.env
+    build:
+      context: .
+      dockerfile: Dockerfile
+    volumes:
+      - ..:/usr/src/app
+      - /usr/src/app/node_modules
+    ports:
+      - 3000:3000
+
+  mongodb:
+    container_name: mongodb
+    command: ["mongod", "--auth"]
+    image: mongo:latest
+    ports:
+      - 27017:27017
+    env_file:
+      - ../.env
+    volumes:
+      - mongodb-data:/data/db
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=${MONGO_INITDB_ROOT_USERNAME}
+      - MONGO_INITDB_ROOT_PASSWORD=${MONGO_INITDB_ROOT_PASSWORD}
+  
+networks:
+  app-network:
+    driver: bridge
+
+volumes:
+  mongodb-data:
+    driver: local
+  
