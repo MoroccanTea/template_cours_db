@@ -34,7 +34,18 @@ services:
       - MONGO_INITDB_ROOT_PASSWORD=${MONGO_INITDB_ROOT_PASSWORD}
     networks:
       - app-network
-  
+
+  nginx:
+    container_name: nginx
+    image: nginx:latest
+    ports:
+     - 80:80
+     # A utiliser uniquement en SSL
+     # - 443:443
+    volumes:
+     - ../nginx.conf:/var/nginx/nginx.conf
+    networks:
+     - app-network
 networks:
   app-network:
     driver: bridge
