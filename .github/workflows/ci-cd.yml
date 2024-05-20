@@ -1,0 +1,96 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    #branches: [ master ]
+  pull_request:
+    #branches: [ master ]
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    env:
+      DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+      DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
+      SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+      HOST: ${{ secrets.HOST }}
+      SSH_USERNAME: ${{ secrets.SSH_USERNAME }}
+      APP_PORT: 3000
+      EMAIL_PORT: 465
+      ADMIN_EMAIL: ${{ secrets.ADMIN_EMAIL }}
+      ADMIN_EMAIL_PASSWORD: ${{ secrets.ADMIN_EMAIL_PASSWORD }}
+      MYSQL_PASSWORD: ${{ secrets.MYSQL_PASSWORD }}
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Sync Repository to Server
+        uses: easingthemes/ssh-deploy@v5.0.0
+        env:
+          SSH_PRIVATE_KEY: ${{ env.SSH_PRIVATE_KEY }}
+          ARGS: "-avzr --delete"
+          SOURCE: "./"
+          REMOTE_HOST: ${{ env.HOST }}
+          REMOTE_USER: ${{ env.SSH_USERNAME }}
+          TARGET: "/var/www/html/node-app"
+
+      - name: Create env file
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ env.HOST }}
+          username: ${{ env.SSH_USERNAME }}
+          key: ${{ env.SSH_PRIVATE_KEY }}
+          script: |
+            cd /var/www/html/node-app
+            docker stop $(docker ps -a -q) && docker rm $(docker ps -a -q) && docker rmi -f $(docker images -a -q)
+            echo "ADMIN_EMAIL=${{ env.ADMIN_EMAIL }}" > .env.production
+            echo "ADMIN_EMAIL_PASSWORD=${{ env.ADMIN_EMAIL_PASSWORD }}" >> .env.production
+            echo "APP_PORT=${{ env.APP_PORT }}" >> .env.production
+            echo "EMAIL_PORT=${{ env.EMAIL_PORT }}" >> .env.production
+            echo "MYSQL_PASSWORD=${{ env.MYSQL_PASSWORD }}" >> .env.production
+
+      - name: Restart Application on Server
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ env.HOST }}
+          username: ${{ env.SSH_USERNAME }}
+          key: ${{ env.SSH_PRIVATE_KEY }}
+          script: |
+            cd /var/www/html/node-app
+            MYSQL_PASSWORD=${{ secrets.MYSQL_PASSWORD }} docker compose up --build --force-recreate --remove-orphans -d
+
+
+      - name: Set up Docker
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ env.DOCKERHUB_USERNAME }}
+          password: ${{ env.DOCKERHUB_TOKEN }}
+
+      - name: Cache Docker layers
+        uses: actions/cache@v3
+        with:
+          path: ~/.docker/build-cache
+          key: ${{ runner.os }}-docker-${{ hashFiles('**/Dockerfile') }}
+            
+      - name: Build and Push Docker Image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./Dockerfile
+          push: true
+          tags:
+            ${{ env.DOCKERHUB_USERNAME }}/node-app:latest
+
+      - name: Remove unnecessary files
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ env.HOST }}
+          username: ${{ env.SSH_USERNAME }}
+          key: ${{ env.SSH_PRIVATE_KEY }}
+          script: |
+            cd /var/www/html/node-app
+            rm .env.production docker-compose.yml Dockerfile README.md License .env.example
