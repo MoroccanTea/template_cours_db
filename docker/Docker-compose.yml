@@ -46,9 +46,6 @@ services:
      - ../nginx.conf:/var/nginx/nginx.conf
     networks:
      - app-network
-networks:
-  app-network:
-    driver: bridge
 
   postgresql:
     container_name: postgresql
@@ -67,12 +64,16 @@ networks:
       - app-network
 
   redis-cache:
-    container_name: redis-cache
+    container_name: redis_cache
     image: redis:latest
     ports:
       - 6379:6379
     networks:
       - app-network
+
+networks:
+  app-network:
+    driver: bridge
 
 volumes:
   mongodb-data:
