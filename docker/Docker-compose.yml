@@ -78,4 +78,6 @@ networks:
 volumes:
   mongodb-data:
     driver: local
+  postgresql-data:
+    driver: local
   
