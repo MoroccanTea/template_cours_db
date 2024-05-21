@@ -50,6 +50,30 @@ networks:
   app-network:
     driver: bridge
 
+  postgresql:
+    container_name: postgresql
+    image: postgres:latest
+    ports:
+      - 5432:5432
+    env_file:
+      - ../.env
+    volumes:
+      - postgresql-data:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_DB=${POSTGRES_DB}
+    networks:
+      - app-network
+
+  redis-cache:
+    container_name: redis-cache
+    image: redis:latest
+    ports:
+      - 6379:6379
+    networks:
+      - app-network
+
 volumes:
   mongodb-data:
     driver: local
