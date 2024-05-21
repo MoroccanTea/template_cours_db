@@ -9,11 +9,8 @@ services:
     depends_on:
       - mongodb
     build:
-      context: .
-      dockerfile: Dockerfile
-    volumes:
-      - ..:/usr/src/app
-      - /usr/src/app/node_modules
+      context: ..
+      dockerfile: docker/Dockerfile
     ports:
       - 3000:3000
     networks:
